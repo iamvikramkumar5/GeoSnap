@@ -1,0 +1,6 @@
+{
+  "name": "GPS Camera",
+  "description": "A premium GPS Camera app for capturing high-resolution photos and videos with high-fidelity, real-time geolocated overlays.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
