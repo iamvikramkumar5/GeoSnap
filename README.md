@@ -4,9 +4,16 @@
 [![Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-blue.svg?style=flat&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 [![CameraX](https://img.shields.io/badge/CameraX-Modern_Camera_Engine-green.svg?style=flat)](https://developer.android.com/training/camerax)
 [![Media3](https://img.shields.io/badge/Media3_Transformer-High--Fidelity_Video-orange.svg?style=flat)](https://developer.android.com/media/media3)
-[![Platform](https://img.shields.io/badge/Platform-Android_8.0+_%28API_26+%29-blue.svg?style=flat&logo=android)](https://developer.android.com)
+[![Platform](https://img.shields.io/badge/Platform-Android_7.0+_%28API_24+%29-blue.svg?style=flat&logo=android)](https://developer.android.com)
 
 **GeoSnap** is a high-performance, modern Android GPS Camera application built from the ground up using **Kotlin**, **Jetpack Compose (Material 3)**, **CameraX**, and **Jetpack Media3**. It enables engineers, surveyors, real estate professionals, field inspectors, and outdoor enthusiasts to capture high-resolution photos and videos embedded with real-time, high-fidelity geolocated overlays, telemetry data, and customizable map tiles.
+
+---
+
+## 👑 Lead Designer & Creator
+This application was conceptualized, designed, and crafted with precision by:
+### **VIKRAM KUMAR** 🚀
+*Lead Designer & System Architect*
 
 ---
 
@@ -91,38 +98,124 @@ One of GeoSnap's strongest assets is its **zero-friction setup**. You can build,
 
 ---
 
-## 🚀 Getting Started
+## 🚀 How to Open & Run in Android Studio
 
-### Prerequisites
-- **Android Studio Koala / Ladybug** or newer.
-- **Android SDK Platform 34** (targetSdk) or newer.
-- **JDK 17**.
+Follow these steps to set up, build, and run the project locally on your machine using Android Studio:
 
-### Building and Running
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/GeoSnap.git
-   cd GeoSnap
-   ```
-2. Open the project in **Android Studio**.
-3. Let Gradle sync dependencies.
-4. Run the `:app` module on an Android Device or Emulator.
+### 1. Prerequisites
+Before importing the project, make sure you have:
+* **Android Studio Ladybug (2024.2.1) / Koala (2024.1.1)** or newer.
+* **JDK 17** configured as your Gradle JDK.
+* **Android SDK Platform 34** (or higher) installed via the Android Studio SDK Manager.
+
+---
+
+### 2. Download or Clone the Repository
+If you downloaded the code as a ZIP archive:
+1. Extract the ZIP file into a dedicated project directory (e.g., `~/AndroidStudioProjects/GeoSnap`).
+
+If you cloned the repository via Git:
+```bash
+git clone https://github.com/yourusername/GeoSnap.git
+cd GeoSnap
+```
+
+---
+
+### 3. Importing the Project into Android Studio
+1. Launch **Android Studio**.
+2. On the welcome screen, click **Open** (or go to **File -> Open** in an existing workspace).
+3. Navigate to the directory where you extracted/cloned **GeoSnap** and select the root directory (the folder containing `build.gradle.kts` and `settings.gradle.kts`).
+4. Click **OK**. Android Studio will begin initializing the project.
+
+---
+
+### 4. Let Gradle Sync Complete
+Upon opening, Android Studio will automatically run a Gradle sync to resolve all the dependencies listed in `gradle/libs.versions.toml`.
+* This may take a few minutes if you are importing it for the first time.
+* Ensure you are connected to the Internet so Gradle can download the necessary libraries (Jetpack Compose, CameraX, Play Services, Media3, etc.).
+* Once the sync completes successfully, you will see a green checkmark or `BUILD SUCCESSFUL` message in the Gradle sync tab.
+
+---
+
+### 5. Configuring the JDK (If build errors occur)
+If you get JDK compatibility errors during the import, ensure Android Studio is using JDK 17:
+1. Go to **File -> Settings** (Windows/Linux) or **Android Studio -> Settings** (macOS).
+2. Navigate to **Build, Execution, Deployment -> Build Tools -> Gradle**.
+3. Under **Gradle JDK**, select **Jetpack Runtime** or **JDK 17**.
+4. Click **Apply** and then **OK**, then click **Sync Project with Gradle Files** in the top toolbar.
+
+---
+
+### 6. Run the App
+Now you are ready to compile and run the app on an Android device or emulator:
+1. Connect a physical Android device via USB (with **USB Debugging** enabled in Developer Options) OR launch a Virtual Device (AVD) from the Android Studio Device Manager.
+2. In the top toolbar, ensure that the run configuration is set to **`:app`** and your target device is selected.
+3. Click the green **Run (Play)** button, or press `Shift + F10` (Windows/Linux) / `Control + R` (macOS).
+4. The Gradle build will run, generate the APK, and install the app onto your device.
+
+---
+
+---
+
+## 🛠️ Code Customization & Development Guide (Code Editor / Android Studio)
+
+Want to customize or modify **GeoSnap**? Here is a practical, developer-friendly guide on how to navigate the codebase, find key files, and modify them easily in the **AI Studio Web Code Editor** or locally in **Android Studio**.
+
+### 📁 Key Files to Explore & Modify
+Here is where the magic happens:
+
+1. **Design Theme & Color Accents (App Theme)**
+   * **Path:** `app/src/main/java/com/example/ui/theme/Color.kt` & `Theme.kt`
+   * **Modification:** App ke primary/secondary colors badalne ke liye `Color.kt` mein custom Hex ranges update karein. `Theme.kt` check karein to configure Material 3 dynamic color switching.
+2. **Watermark Card Overlay (On-screen Preview UI)**
+   * **Path:** `app/src/main/java/com/example/ui/components/GPSOverlayCard.kt`
+   * **Modification:** Screen par watermark overlay card ka layout, gradient styling, border rounding, or Glassmorphic blur modify karne ke liye iss Jetpack Compose view ko update karein.
+3. **Image & Video Rendering Engine (Saving Watermarks to Files)**
+   * **Path:** `app/src/main/java/com/example/utils/WatermarkGenerator.kt`
+   * **Modification:** Saved JPEGs and recorded Videos par final watermark ko high-resolution draw karne ke liye core Android Canvas rendering algorithm ko customize karein (e.g., change fonts, add custom logo overlays, or shift coordinates mapping).
+4. **Camera Controls & Bottom Actions UI**
+   * **Path:** `app/src/main/java/com/example/ui/components/CameraControls.kt`
+   * **Modification:** Custom capture button animations, templates selector slider padding, or flash toggle behavior control karne ke liye edit karein.
+5. **App Preferences & User Settings Toggles**
+   * **Path:** `app/src/main/java/com/example/ui/components/SettingsView.kt` & `SettingsManager.kt`
+   * **Modification:** Custom toggle features create karein, dynamic speed thresholds coordinate styles add karein, and change how settings are stored on persistent SharedPreferences storage.
+
+---
+
+### 🔄 How to Modify the App Step-by-Step
+
+#### 💻 Option A: Using AI Studio Web Code Editor (Instant Development)
+1. **Find File**: Left-side code explorer tree view scroll karein and go to the target file.
+2. **Code Edit**: Directly online text editor window mein lines modify karein (Jaise ki background color value or custom text styles).
+3. **Auto Sync**: Editor compile aur build system trigger karega, and immediate updates automatic side Emulator preview window screen par sync hone lagenge!
+
+#### 🚀 Option B: Locally in Android Studio (Full Native Control)
+1. **Import Workspace**: Click **File -> Open**, navigate to project root directory, and pick `settings.gradle.kts` file.
+2. **Fast File Find**: Keep typing `Shift` twice on keyboard (Search Everywhere tool) to find key classes like `WatermarkGenerator` or `GPSOverlayCard` instantly.
+3. **Add Features**: Compose dynamic layouts, add system listeners, or perform Gradle updates using rich Android Studio tools.
+4. **Build APK**: Generate a distributable installer via **Build -> Build Bundle(s) / APK(s) -> Build APK(s)** to run on your own or client device!
 
 ---
 
 ## 🔒 Permissions
-To provide real-time overlays, the app declares and requests:
-- `android.permission.CAMERA` — For video and photo capture.
-- `android.permission.ACCESS_FINE_LOCATION` & `android.permission.ACCESS_COARSE_LOCATION` — For fetching real-time telemetry coordinates.
-- `android.permission.RECORD_AUDIO` — For recording sound on watermarked videos.
+Upon opening, the application will prompt you for the following essential permissions. Please grant them to enjoy full functionality:
+* **Camera Access** (`android.permission.CAMERA`) — To capture beautiful real-time watermarked photographs.
+* **Location Access** (`android.permission.ACCESS_FINE_LOCATION` & `ACCESS_COARSE_LOCATION`) — To accurately capture current coordinates, elevation, speed, and addresses.
+* **Audio Access** (`android.permission.RECORD_AUDIO`) — To record high-fidelity sound during video recordings.
 
 ---
 
-## 🎨 Creative Showcase & Design Choices
-- **Edge-to-Edge Canvas**: Employs full edge-to-edge layouts using `enableEdgeToEdge()` to maximize screen real estate, letting the live camera preview bleed beautifully into system status bars.
-- **Premium Glassmorphism**: Semi-transparent, blur-backed Material 3 cards let the camera preview remain softly visible underneath telemetry layouts.
-- **Fluid Typography**: Dynamic display fonts paired with monospace elements ensure that coordinate indicators are ultra-readable under bright sunlight or dark nighttime environments.
+## 🔮 Future Roadmap
+
+We are constantly working to improve GeoSnap. Here is what's coming next:
+
+* **🍏 iOS Support is Coming Soon!** 
+  * We are planning to rewrite the core watermark rendering and settings module using **Kotlin Multiplatform (KMP)** and **Compose Multiplatform** to deliver a fully native and synchronized experience across both **Android and iOS** devices.
+* **☁️ Cloud Backup & Synchronization**: Sync captured photos and watermark templates across devices.
+* **🏷️ EXIF Metadata Tags**: Store coordinates directly inside photo EXIF headers for desktop GIS systems.
+* **📈 Enhanced Offline Map Overlays**: Support for vector-based offline map packs.
 
 ---
 
-*Crafted with 💖 by Google AI Studio's Coding Agent.*
+*Crafted with 💖 by **VIKRAM KUMAR** and Google AI Studio.*
