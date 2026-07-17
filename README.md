@@ -218,4 +218,4 @@ We are constantly working to improve GeoSnap. Here is what's coming next:
 
 ---
 
-*Crafted with ❤️ by **VIKRAM KUMAR** and Google AI Studio.*
+Crafted with ❤️ by **VIKKRAM KUMAR**
