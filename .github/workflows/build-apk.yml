@@ -25,8 +25,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Grant execute permission for gradlew and fix line endings
+      - name: Ensure Gradle Wrapper and permissions
         run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper
+          fi
           sed -i 's/\r$//' gradlew
           chmod +x gradlew
 
