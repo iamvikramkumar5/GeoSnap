@@ -167,13 +167,12 @@ object WatermarkGenerator {
         } else {
             24f * scale
         }
-        val cardHeight = 280f * scale
-        val cardWidth = if (isLandscape) {
-            // Keep card width compact on landscape images to match portrait proportions instead of stretching
-            height - 2f * marginX
+        val cardHeight = if (isLandscape) {
+            Math.min(280f * scale, height * 0.22f)
         } else {
-            width - 2f * marginX
+            280f * scale
         }
+        val cardWidth = width - 2f * marginX
 
         val cardLeft = marginX
         val cardRight = cardLeft + cardWidth
@@ -191,28 +190,6 @@ object WatermarkGenerator {
         val mapBottom = cardBottom
         val mapRect = RectF(mapLeft, mapTop, mapRight, mapBottom)
         val mapCornerRadius = if (settings.roundedCorners) 32f * scale else 0f
-
-        // Right Section: Dark Glassmorphic Card Container (Text container)
-        val gap = 16f * scale
-        
-        // Define text card bounds dynamically based on templates
-        val textCardLeft = when (settings.template) {
-            WatermarkTemplate.CORPORATE -> cardLeft
-            else -> mapRight + gap
-        }
-        
-        val textCardRight = when (settings.template) {
-            WatermarkTemplate.PROFESSIONAL -> cardRight - cardHeight - gap
-            else -> cardRight
-        }
-        
-        val textCardTop = cardTop
-        val textCardBottom = cardBottom
-        val textCardRect = RectF(textCardLeft, textCardTop, textCardRight, textCardBottom)
-        val cornerRadius = if (settings.roundedCorners) 32f * scale else 0f
-
-        // Optional QR Section bounds for Scan Location Template
-        val qrRect = RectF(cardRight - cardHeight, cardTop, cardRight, cardBottom)
 
         // Latitude and Longitude for map and text coordinates
         val lat = if (settings.useManualLocation) settings.manualLatitude else gpsData.latitude
@@ -252,6 +229,51 @@ object WatermarkGenerator {
 
         val flag = if (settings.showCountryFlag) getFlagEmoji(if (settings.useManualLocation) settings.manualCountry else gpsData.country) else ""
         val titleText = "$locationTitle $flag".trim()
+
+        val rawAddressText = if (settings.useManualLocation) settings.manualAddress else gpsData.address
+        val plusCode = generatePlusCode(lat, lng)
+        val detailsText = if (plusCode.isNotEmpty()) "$plusCode, $rawAddressText" else rawAddressText
+
+        val latValStr = formatCoordinate(lat, true, settings.coordinateFormat)
+        val lngValStr = formatCoordinate(lng, false, settings.coordinateFormat)
+        val tzString = gpsData.timezone.ifEmpty { "GMT+05:30" }.replace("GMT", "GMT ")
+
+        // Measure text content length to prevent dark card from stretching endlessly across large landscape photos
+        val testTitlePaint = Paint().apply { textSize = 38f * scale; typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD) }
+        val testAddressPaint = Paint().apply { textSize = 21f * scale; typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD) }
+        val testCoordPaint = Paint().apply { textSize = 20f * scale; typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD) }
+
+        val titleW = testTitlePaint.measureText(titleText)
+        val addressW = testAddressPaint.measureText(detailsText)
+        val coordW = testCoordPaint.measureText("Lat: $latValStr  Long: $lngValStr")
+        val dateW = testCoordPaint.measureText("$dynamicDateText $dynamicTimeText $tzString")
+        val badgeW = testCoordPaint.measureText("GeoSnap Camera") + 40f * scale
+
+        val maxTextW = Math.max(titleW + badgeW, Math.max(addressW, Math.max(coordW, dateW)))
+        val idealTextCardWidth = maxTextW + 56f * scale
+
+        // Right Section: Dark Glassmorphic Card Container (Text container)
+        val gap = 16f * scale
+        
+        // Define text card bounds dynamically based on templates and text length
+        val textCardLeft = when (settings.template) {
+            WatermarkTemplate.CORPORATE -> cardLeft
+            else -> mapRight + gap
+        }
+        
+        val textCardRight = when (settings.template) {
+            WatermarkTemplate.PROFESSIONAL -> cardRight - cardHeight - gap
+            WatermarkTemplate.CORPORATE -> cardRight
+            else -> (textCardLeft + Math.max(idealTextCardWidth, cardHeight * 2.2f)).coerceAtMost(cardRight)
+        }
+        
+        val textCardTop = cardTop
+        val textCardBottom = cardBottom
+        val textCardRect = RectF(textCardLeft, textCardTop, textCardRight, textCardBottom)
+        val cornerRadius = if (settings.roundedCorners) 32f * scale else 0f
+
+        // Optional QR Section bounds for Scan Location Template
+        val qrRect = RectF(cardRight - cardHeight, cardTop, cardRight, cardBottom)
 
         val latStr = "Lat " + formatCoordinate(gpsData.latitude, true, settings.coordinateFormat)
         val lngStr = "Long " + formatCoordinate(gpsData.longitude, false, settings.coordinateFormat)
@@ -592,10 +614,6 @@ object WatermarkGenerator {
             titleText
         }
 
-        val rawAddressText = if (settings.useManualLocation) settings.manualAddress else gpsData.address
-        val plusCode = generatePlusCode(lat, lng)
-        val detailsText = if (plusCode.isNotEmpty()) "$plusCode, $rawAddressText" else rawAddressText
-
         val addressPaint = TextPaint().apply {
             color = Color.WHITE
             textSize = 21f * scale
@@ -615,10 +633,6 @@ object WatermarkGenerator {
             @Suppress("DEPRECATION")
             StaticLayout(detailsText, addressPaint, titleContentWidth.toInt(), Layout.Alignment.ALIGN_NORMAL, addressLineSpacing, 0f, false)
         }
-
-        val latValStr = formatCoordinate(lat, true, settings.coordinateFormat)
-        val lngValStr = formatCoordinate(lng, false, settings.coordinateFormat)
-        val tzString = gpsData.timezone.ifEmpty { "GMT+05:30" }.replace("GMT", "GMT ")
 
         if (settings.template == WatermarkTemplate.CORPORATE) {
             // Drawing logic specifically for CORPORATE:

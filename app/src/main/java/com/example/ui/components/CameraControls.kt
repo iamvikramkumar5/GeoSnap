@@ -32,6 +32,73 @@ enum class CaptureMode {
 }
 
 @Composable
+fun CameraTopBar(
+    flashMode: Int,
+    onFlashCycled: () -> Unit,
+    isShutterSoundEnabled: Boolean,
+    onShutterSoundToggled: (Boolean) -> Unit,
+    onSettingsClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.Black)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Flash Mode Icon
+            IconButton(
+                onClick = onFlashCycled,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = when (flashMode) {
+                        ImageCapture.FLASH_MODE_ON -> Icons.Default.FlashOn
+                        ImageCapture.FLASH_MODE_AUTO -> Icons.Default.FlashAuto
+                        else -> Icons.Default.FlashOff
+                    },
+                    contentDescription = "Cycle Flash Mode",
+                    tint = if (flashMode == ImageCapture.FLASH_MODE_OFF) Color.White else Color(0xFF00E676),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Shutter Sound Toggle Button
+            IconButton(
+                onClick = { onShutterSoundToggled(!isShutterSoundEnabled) },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (isShutterSoundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                    contentDescription = "Toggle Shutter Sound",
+                    tint = if (isShutterSoundEnabled) Color.White else Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Settings Gear Button
+            IconButton(
+                onClick = onSettingsClicked,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Open Settings",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun CameraControls(
     captureMode: CaptureMode,
     onCaptureModeChanged: (CaptureMode) -> Unit,
@@ -66,80 +133,72 @@ fun CameraControls(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .padding(16.dp),
+            .background(Color.Black)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         
-        // 1. Zoom and Secondary Option Toolbar (Minimalist and clean)
+        // 1. Zoom Selector Bar & Grid Icon (Pill capsule + grid button as seen in reference image)
         if (!isRecording) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(bottom = 8.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Flash Mode Button
-                IconButton(
-                    onClick = onFlashCycled,
-                    modifier = Modifier.background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = when (flashMode) {
-                            ImageCapture.FLASH_MODE_ON -> Icons.Default.FlashOn
-                            ImageCapture.FLASH_MODE_AUTO -> Icons.Default.FlashAuto
-                            else -> Icons.Default.FlashOff
-                        },
-                        contentDescription = "Cycle Flash Mode",
-                        tint = if (flashMode == ImageCapture.FLASH_MODE_OFF) Color.White else Color(0xFF00E676)
-                    )
-                }
-
-                // Shutter Sound Toggle Button
-                IconButton(
-                    onClick = { onShutterSoundToggled(!isShutterSoundEnabled) },
-                    modifier = Modifier.background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isShutterSoundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
-                        contentDescription = "Toggle Shutter Sound",
-                        tint = if (isShutterSoundEnabled) Color(0xFF00E676) else Color.White
-                    )
-                }
-
-                // Zoom Selector: 1x, 2x, 4x, 8x
                 Row(
-                    modifier = Modifier
-                        .background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    listOf(1.0f, 2.0f, 4.0f, 8.0f).forEach { zoom ->
-                        val isSelected = zoomRatio == zoom
-                        Text(
-                            text = "${zoom.toInt()}x",
-                            color = if (isSelected) Color(0xFF00E676) else Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent)
-                                .clickable { onZoomSelected(zoom) }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                    Row(
+                        modifier = Modifier
+                            .background(Color(0xFF1A1A1A).copy(alpha = 0.85f), RoundedCornerShape(24.dp))
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val zoomLevels = listOf(
+                            1.0f to "1x",
+                            2.0f to "2x",
+                            4.0f to "4x",
+                            8.0f to "8x"
+                        )
+                        zoomLevels.forEach { (zoom, label) ->
+                            val isSelected = zoomRatio == zoom
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(if (isSelected) Color.White else Color.Transparent)
+                                    .clickable { onZoomSelected(zoom) }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) Color.Black else Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // Grid / Options button next to zoom pill
+                    IconButton(
+                        onClick = onSettingsClicked,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFF1A1A1A).copy(alpha = 0.85f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GridView,
+                            contentDescription = "Grid / Settings",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
-                }
-
-                // Settings Gear Button
-                IconButton(
-                    onClick = onSettingsClicked,
-                    modifier = Modifier.background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Open Settings",
-                        tint = Color.White
-                    )
                 }
             }
         }
@@ -315,30 +374,43 @@ fun CameraControls(
             }
         }
 
-        // 4. Capture Mode Switch Slider (PHOTO / VIDEO toggle)
+        // 4. Camera Mode Row (PORTRAIT, PHOTO, VIDEO, MORE as seen in reference image)
         if (!isRecording) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier
-                    .background(Color.DarkGray.copy(alpha = 0.4f), RoundedCornerShape(24.dp))
-                    .padding(2.dp)
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                CaptureMode.values().forEach { mode ->
-                    val isSelected = captureMode == mode
+                val modeList = listOf("PORTRAIT", "PHOTO", "VIDEO", "MORE")
+                modeList.forEach { modeName ->
+                    val isSelected = when (modeName) {
+                        "PHOTO", "PORTRAIT" -> captureMode == CaptureMode.PHOTO
+                        "VIDEO" -> captureMode == CaptureMode.VIDEO
+                        else -> false
+                    }
+                    val textColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.55f)
+                    
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(if (isSelected) Color(0xFF00E676) else Color.Transparent)
-                            .clickable { onCaptureModeChanged(mode) }
-                            .padding(horizontal = 18.dp, vertical = 6.dp),
+                            .clickable {
+                                when (modeName) {
+                                    "PORTRAIT", "PHOTO" -> onCaptureModeChanged(CaptureMode.PHOTO)
+                                    "VIDEO" -> onCaptureModeChanged(CaptureMode.VIDEO)
+                                    "MORE" -> onSettingsClicked()
+                                }
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = mode.name,
-                            color = if (isSelected) Color.Black else Color.White,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            text = modeName,
+                            color = textColor,
+                            fontSize = 12.5.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            letterSpacing = 1.sp
                         )
                     }
                 }

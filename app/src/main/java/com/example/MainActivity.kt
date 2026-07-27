@@ -59,6 +59,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.ui.CameraViewModel
 import com.example.ui.components.CameraControls
 import com.example.ui.components.CameraPreviewView
+import com.example.ui.components.CameraTopBar
 import com.example.ui.components.CaptureMode
 import com.example.ui.components.GPSOverlayCard
 import com.example.ui.components.GalleryView
@@ -443,6 +444,22 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
     val recordingDuration by viewModel.recordingDurationSeconds.collectAsState()
     val savedMedia by viewModel.savedMedia.collectAsState()
 
+    val targetSurfaceRotation = when (deviceOrientation) {
+        90 -> android.view.Surface.ROTATION_90
+        180 -> android.view.Surface.ROTATION_180
+        270 -> android.view.Surface.ROTATION_270
+        else -> android.view.Surface.ROTATION_0
+    }
+
+    LaunchedEffect(targetSurfaceRotation) {
+        try {
+            imageCapture.targetRotation = targetSurfaceRotation
+            videoCapture.targetRotation = targetSurfaceRotation
+        } catch (e: Exception) {
+            Log.e("CameraWorkspace", "Error updating targetRotation", e)
+        }
+    }
+
     var activeCaptureMode by remember { mutableStateOf(CaptureMode.PHOTO) }
     var showGallery by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -514,7 +531,7 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // 1. Live Camera Preview (Tap-to-focus and Pinch-to-zoom integrated)
         CameraPreviewView(
             previewView = previewView,
@@ -524,62 +541,84 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. Real-time GPS Watermark Overlay card (Bottom-aligned column, GCam-style!)
+        // 2. Top Black Menu Bar (Flash, Sound Toggle, Settings)
+        CameraTopBar(
+            flashMode = flashMode,
+            onFlashCycled = { viewModel.cycleFlash() },
+            isShutterSoundEnabled = settings.shutterSound,
+            onShutterSoundToggled = { enabled ->
+                viewModel.updateSettings { copy(shutterSound = enabled) }
+            },
+            onSettingsClicked = { showSettings = true },
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
+
+        // 3. Bottom Controls Layer (GPS Overlay Card floating, Camera Controls solid black including navigation bar)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
+                    .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = 16.dp)
             ) {
                 GPSOverlayCard(
                     gpsData = gpsData,
                     settings = settings,
                     mapBitmap = mapBitmap,
-                    azimuth = azimuth
+                    azimuth = azimuth,
+                    deviceOrientation = deviceOrientation
                 )
             }
 
-            CameraControls(
-                captureMode = activeCaptureMode,
-                onCaptureModeChanged = { activeCaptureMode = it },
-                flashMode = flashMode,
-                onFlashCycled = { viewModel.cycleFlash() },
-                zoomRatio = zoomRatio,
-                onZoomSelected = {
-                    viewModel.setZoom(it)
-                    activeCamera?.cameraControl?.setZoomRatio(it)
-                },
-                isRecording = isRecording,
-                isRecordingPaused = isRecordingPaused,
-                recordingDurationSeconds = recordingDuration,
-                onCaptureClicked = {
-                    imageCapture.flashMode = flashMode
-                    viewModel.takePhoto(imageCapture, context) {
-                        // Toast removed as requested by the user
-                    }
-                },
-                onRecordClicked = {
-                    viewModel.startVideoRecording(videoCapture, context) {
-                        // Toast removed as requested by the user
-                    }
-                },
-                onPauseRecordClicked = { viewModel.pauseVideoRecording() },
-                onResumeRecordClicked = { viewModel.resumeVideoRecording() },
-                onStopRecordClicked = { viewModel.stopVideoRecording() },
-                onSwitchCameraClicked = { viewModel.toggleCamera() },
-                latestMediaFile = savedMedia.firstOrNull(),
-                onGalleryClicked = { showGallery = true },
-                onSettingsClicked = { showSettings = true },
-                isCapturing = isCapturing,
-                isShutterSoundEnabled = settings.shutterSound,
-                onShutterSoundToggled = { enabled ->
-                    viewModel.updateSettings { copy(shutterSound = enabled) }
-                }
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black)
+            ) {
+                CameraControls(
+                    captureMode = activeCaptureMode,
+                    onCaptureModeChanged = { activeCaptureMode = it },
+                    flashMode = flashMode,
+                    onFlashCycled = { viewModel.cycleFlash() },
+                    zoomRatio = zoomRatio,
+                    onZoomSelected = {
+                        viewModel.setZoom(it)
+                        activeCamera?.cameraControl?.setZoomRatio(it)
+                    },
+                    isRecording = isRecording,
+                    isRecordingPaused = isRecordingPaused,
+                    recordingDurationSeconds = recordingDuration,
+                    onCaptureClicked = {
+                        imageCapture.flashMode = flashMode
+                        viewModel.takePhoto(imageCapture, context) {
+                            // Toast removed as requested by the user
+                        }
+                    },
+                    onRecordClicked = {
+                        viewModel.startVideoRecording(videoCapture, context) {
+                            // Toast removed as requested by the user
+                        }
+                    },
+                    onPauseRecordClicked = { viewModel.pauseVideoRecording() },
+                    onResumeRecordClicked = { viewModel.resumeVideoRecording() },
+                    onStopRecordClicked = { viewModel.stopVideoRecording() },
+                    onSwitchCameraClicked = { viewModel.toggleCamera() },
+                    latestMediaFile = savedMedia.firstOrNull(),
+                    onGalleryClicked = { showGallery = true },
+                    onSettingsClicked = { showSettings = true },
+                    isCapturing = isCapturing,
+                    isShutterSoundEnabled = settings.shutterSound,
+                    onShutterSoundToggled = { enabled ->
+                        viewModel.updateSettings { copy(shutterSound = enabled) }
+                    },
+                    modifier = Modifier.navigationBarsPadding()
+                )
+            }
         }
 
         // 3. Crisp quick shutter dip overlay (resembling mechanical camera shutter)

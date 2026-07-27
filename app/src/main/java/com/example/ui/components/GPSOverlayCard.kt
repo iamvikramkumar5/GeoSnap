@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import com.example.model.GPSData
@@ -19,9 +20,23 @@ fun GPSOverlayCard(
     settings: SettingsData,
     mapBitmap: Bitmap?,
     azimuth: Float,
+    deviceOrientation: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    // Elegant dynamic animated drifting for compass fallback/simulation
+    // Real-time orientation rotation target (smooth 200ms transition)
+    val targetRotationZ = when (deviceOrientation) {
+        90 -> 90f
+        270 -> -90f
+        else -> 0f
+    }
+
+    val animRotationZ by animateFloatAsState(
+        targetValue = targetRotationZ,
+        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        label = "watermark_rotation"
+    )
+
+    // Dynamic animated drifting for compass fallback/simulation
     val infiniteTransition = rememberInfiniteTransition(label = "compass_drift")
     val simulatedAzimuth by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -42,7 +57,6 @@ fun GPSOverlayCard(
         else -> 1.0f
     }
     
-    // Default template card height is around 120dp. Simple template is smaller (around 48dp).
     val cardHeightDp = if (settings.template == com.example.model.WatermarkTemplate.SIMPLE) {
         48.dp * sizeMultiplier
     } else {
@@ -53,6 +67,32 @@ fun GPSOverlayCard(
         modifier = modifier
             .fillMaxWidth()
             .height(cardHeightDp)
+            .graphicsLayer {
+                rotationZ = animRotationZ
+                val w = size.width
+                val h = size.height
+                val diff = (w - h) / 2f
+                val marginPx = 12.dp.toPx()
+
+                when {
+                    animRotationZ > 0f -> {
+                        // Landscape (device 90deg -> rotation +90deg)
+                        val progress = (animRotationZ / 90f).coerceIn(0f, 1f)
+                        translationX = progress * (-diff + marginPx)
+                        translationY = progress * (-diff)
+                    }
+                    animRotationZ < 0f -> {
+                        // Landscape (device 270deg -> rotation -90deg)
+                        val progress = (animRotationZ / -90f).coerceIn(0f, 1f)
+                        translationX = progress * (diff - marginPx)
+                        translationY = progress * (-diff)
+                    }
+                    else -> {
+                        translationX = 0f
+                        translationY = 0f
+                    }
+                }
+            }
     ) {
         val nativeCanvas = drawContext.canvas.nativeCanvas
         WatermarkGenerator.drawWatermarkOnCanvas(
@@ -66,5 +106,6 @@ fun GPSOverlayCard(
         )
     }
 }
+
 
 

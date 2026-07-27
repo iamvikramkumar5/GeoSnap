@@ -229,17 +229,6 @@ fun FullscreenMediaViewer(
 ) {
     val context = LocalContext.current
     val isVideo = file.extension.equals("mp4", true)
-    var metadata by remember { mutableStateOf<Map<String, String>?>(null) }
-
-    // Load companion metadata on file change
-    LaunchedEffect(file) {
-        val rawJson = loadMetadataJson(context, file)
-        if (rawJson != null) {
-            metadata = parseMetadataJson(rawJson)
-        } else {
-            metadata = null
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -309,94 +298,6 @@ fun FullscreenMediaViewer(
                         tint = Color(0xFFFF5252)
                     )
                 }
-            }
-        }
-
-        // Bottom Telemetry Overlay Drawer (Glassmorphic)
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .fillMaxWidth()
-                .padding(16.dp)
-                .shadow(8.dp, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xE610141C))
-                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                .padding(16.dp)
-        ) {
-            Text(
-                text = if (isVideo) "VIDEO METADATA" else "PHOTO TELEMETRY",
-                color = Color(0xFF00E676),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            metadata?.let { data ->
-                Text(
-                    text = data["address"] ?: "Location Coordinates Secured",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 18.sp
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "LATITUDE", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = data["latitude"] ?: "0.0", color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "LONGITUDE", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = data["longitude"] ?: "0.0", color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "ALTITUDE", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = data["altitude"] ?: "0m", color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "SPEED", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = data["speed"] ?: "0.0", color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column(modifier = Modifier.weight(1.5f)) {
-                        Text(text = "TIMESTAMP", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = "${data["date"]} @ ${data["time"]}", color = Color.White, fontSize = 11.sp)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "ZONE", color = Color.Gray, fontSize = 9.sp)
-                        Text(text = data["timezone"]?.substringBefore(" ") ?: "UTC", color = Color.White, fontSize = 11.sp)
-                    }
-                }
-            } ?: run {
-                // Fallback to simple file metadata
-                Text(
-                    text = file.name,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Size: ${String.format("%.2f MB", file.length() / (1024f * 1024f))} | Album: GeoSnap",
-                    color = Color.Gray,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace
-                )
             }
         }
     }
