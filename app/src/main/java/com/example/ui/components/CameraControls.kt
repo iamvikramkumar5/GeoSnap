@@ -374,7 +374,7 @@ fun CameraControls(
             }
         }
 
-        // 4. Camera Mode Row (PORTRAIT, PHOTO, VIDEO, MORE as seen in reference image)
+        // 4. Camera Mode Row (PHOTO, VIDEO, MORE)
         if (!isRecording) {
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -384,10 +384,10 @@ fun CameraControls(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val modeList = listOf("PORTRAIT", "PHOTO", "VIDEO", "MORE")
+                val modeList = listOf("PHOTO", "VIDEO", "MORE")
                 modeList.forEach { modeName ->
                     val isSelected = when (modeName) {
-                        "PHOTO", "PORTRAIT" -> captureMode == CaptureMode.PHOTO
+                        "PHOTO" -> captureMode == CaptureMode.PHOTO
                         "VIDEO" -> captureMode == CaptureMode.VIDEO
                         else -> false
                     }
@@ -397,12 +397,12 @@ fun CameraControls(
                         modifier = Modifier
                             .clickable {
                                 when (modeName) {
-                                    "PORTRAIT", "PHOTO" -> onCaptureModeChanged(CaptureMode.PHOTO)
+                                    "PHOTO" -> onCaptureModeChanged(CaptureMode.PHOTO)
                                     "VIDEO" -> onCaptureModeChanged(CaptureMode.VIDEO)
                                     "MORE" -> onSettingsClicked()
                                 }
                             }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
