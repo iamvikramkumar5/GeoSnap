@@ -30,6 +30,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,10 +78,18 @@ class MainActivity : ComponentActivity() {
         viewModel = CameraViewModel(applicationContext)
 
         setContent {
-            MyApplicationTheme {
+            val settings by viewModel.settingsState.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+            val isDarkTheme = when (settings.theme) {
+                "Light" -> false
+                "Dark" -> true
+                else -> systemDark
+            }
+
+            MyApplicationTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black
+                    color = if (isDarkTheme) Color.Black else Color(0xFFFAFAFA)
                 ) {
                     GeoSnapApp(viewModel)
                 }

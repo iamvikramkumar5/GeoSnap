@@ -49,10 +49,17 @@ fun GalleryView(
     val context = LocalContext.current
     var selectedFile by remember { mutableStateOf<File?>(null) }
 
+    val isDarkTheme = MaterialTheme.colorScheme.background.red < 0.5f
+    val bgColor = if (isDarkTheme) Color(0xFF0C0E12) else Color(0xFFFAFAFA)
+    val textPrimary = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+    val accentColor = if (isDarkTheme) Color(0xFF00E676) else Color(0xFF0284C7)
+    val iconBg = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color(0xFFF1F5F9)
+    val dividerColor = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color(0xFFE2E8F0)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0E12)) // Deep slate dark background
+            .background(bgColor)
     ) {
         Column(
             modifier = Modifier
@@ -70,14 +77,14 @@ fun GalleryView(
                 Column {
                     Text(
                         text = "GEOSNAP VAULT",
-                        color = Color.White,
+                        color = textPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.5.sp
                     )
                     Text(
                         text = "${mediaFiles.size} Items Available",
-                        color = Color(0xFF00E676), // Neon green accent
+                        color = accentColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -85,17 +92,17 @@ fun GalleryView(
 
                 IconButton(
                     onClick = onClose,
-                    modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    modifier = Modifier.background(iconBg, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Vault",
-                        tint = Color.White
+                        tint = textPrimary
                     )
                 }
             }
 
-            Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
+            Divider(color = dividerColor, thickness = 1.dp)
 
             if (mediaFiles.isEmpty()) {
                 // Empty State

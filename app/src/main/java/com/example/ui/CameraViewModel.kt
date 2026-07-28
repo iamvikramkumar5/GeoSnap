@@ -259,22 +259,24 @@ class CameraViewModel(private val context: Context) : ViewModel(), SensorEventLi
 
     fun loadSavedMedia() {
         viewModelScope.launch(Dispatchers.IO) {
-            val albumName = "GeoSnap" // Pictures/GeoSnap and Movies/GeoSnap!
-            val photosDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), albumName)
-            val videosDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), albumName)
-
+            val albumNames = listOf("GeoSnap Camera", "GeoSnap")
             val mediaFiles = mutableListOf<File>()
-            
-            if (photosDir.exists() && photosDir.isDirectory) {
-                photosDir.listFiles { file -> 
-                    file.isFile && (file.extension.equals("jpg", true) || file.extension.equals("jpeg", true)) 
-                }?.let { mediaFiles.addAll(it) }
-            }
 
-            if (videosDir.exists() && videosDir.isDirectory) {
-                videosDir.listFiles { file -> 
-                    file.isFile && file.extension.equals("mp4", true) 
-                }?.let { mediaFiles.addAll(it) }
+            for (albumName in albumNames) {
+                val photosDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), albumName)
+                val videosDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), albumName)
+
+                if (photosDir.exists() && photosDir.isDirectory) {
+                    photosDir.listFiles { file ->
+                        file.isFile && (file.extension.equals("jpg", true) || file.extension.equals("jpeg", true))
+                    }?.let { mediaFiles.addAll(it) }
+                }
+
+                if (videosDir.exists() && videosDir.isDirectory) {
+                    videosDir.listFiles { file ->
+                        file.isFile && file.extension.equals("mp4", true)
+                    }?.let { mediaFiles.addAll(it) }
+                }
             }
 
             mediaFiles.sortByDescending { file -> file.lastModified() }
@@ -348,8 +350,8 @@ class CameraViewModel(private val context: Context) : ViewModel(), SensorEventLi
                             // Draw watermark using standard rendering engine
                             val watermarked = WatermarkGenerator.drawWatermark(orientedBitmap, gps, settings, cachedMap, activeAzi)
 
-                            // Save SINGLE file
-                            MediaSaver.savePhoto(context, watermarked, gps, settings)
+                            // Save photo(s)
+                            MediaSaver.savePhoto(context, watermarked, gps, settings, orientedBitmap)
 
                             // Reload Gallery
                             loadSavedMedia()

@@ -43,7 +43,8 @@ class SettingsManager(context: Context) {
             roundedCorners = sharedPrefs.getBoolean("rounded_corners", true),
             glassBlur = sharedPrefs.getBoolean("glass_blur", true),
             shutterSound = sharedPrefs.getBoolean("shutter_sound_enabled", true),
-            saveLocation = sharedPrefs.getString("save_location", "GeoSnap") ?: "GeoSnap",
+            saveOriginalPhoto = sharedPrefs.getBoolean("save_original_photo", false),
+            saveLocation = sharedPrefs.getString("save_location", "GeoSnap Camera") ?: "GeoSnap Camera",
             theme = sharedPrefs.getString("theme", "Dark") ?: "Dark",
             language = sharedPrefs.getString("language", "en") ?: "en",
             imageQuality = sharedPrefs.getString("image_quality", "High") ?: "High"
@@ -78,6 +79,7 @@ class SettingsManager(context: Context) {
             putBoolean("rounded_corners", data.roundedCorners)
             putBoolean("glass_blur", data.glassBlur)
             putBoolean("shutter_sound_enabled", data.shutterSound)
+            putBoolean("save_original_photo", data.saveOriginalPhoto)
             putString("save_location", data.saveLocation)
             putString("theme", data.theme)
             putString("language", data.language)

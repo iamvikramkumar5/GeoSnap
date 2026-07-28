@@ -42,6 +42,22 @@ fun SettingsView(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    val systemInDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDarkTheme = when (settings.theme) {
+        "Light" -> false
+        "Dark" -> true
+        else -> systemInDark
+    }
+
+    val bgColor = if (isDarkTheme) Color(0xFF0C0E12) else Color(0xFFFAFAFA)
+    val textPrimary = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+    val textSecondary = if (isDarkTheme) Color.Gray else Color(0xFF64748B)
+    val headerColor = if (isDarkTheme) Color(0xFF00E676) else Color(0xFF0F172A)
+    val boxBgColor = if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF1F5F9)
+    val boxBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color(0xFFE2E8F0)
+    val selectedPillBg = if (isDarkTheme) Color(0xFF00E676) else Color(0xFF0F172A)
+    val selectedPillText = if (isDarkTheme) Color.Black else Color.White
+
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
@@ -49,7 +65,7 @@ fun SettingsView(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0E12))
+            .background(bgColor)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp)
@@ -66,18 +82,18 @@ fun SettingsView(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = onClose,
-                        modifier = Modifier.background(Color.White.copy(alpha = 0.05f), CircleShape)
+                        modifier = Modifier.background(boxBgColor, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close Settings",
-                            tint = Color.White
+                            tint = textPrimary
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "Camera Settings",
-                        color = Color.White,
+                        color = textPrimary,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -86,7 +102,7 @@ fun SettingsView(
                 Button(
                     onClick = onReset,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red.copy(alpha = 0.2f),
+                        containerColor = Color.Red.copy(alpha = 0.15f),
                         contentColor = Color.Red
                     ),
                     shape = RoundedCornerShape(16.dp)
@@ -98,7 +114,7 @@ fun SettingsView(
 
         // SECTION 1: WATERMARK TEMPLATES
         item {
-            SettingsSectionHeader(title = "Watermark Design Templates")
+            SettingsSectionHeader(title = "Watermark Design Templates", color = headerColor)
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -110,16 +126,8 @@ fun SettingsView(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                if (isSelected) Color(0xFF00E676) else Color.White.copy(
-                                    alpha = 0.05f
-                                )
-                            )
-                            .border(
-                                1.dp,
-                                if (isSelected) Color(0xFF00E676) else Color.White.copy(alpha = 0.1f),
-                                RoundedCornerShape(16.dp)
-                            )
+                            .background(if (isSelected) selectedPillBg else boxBgColor)
+                            .border(1.dp, if (isSelected) selectedPillBg else boxBorderColor, RoundedCornerShape(16.dp))
                             .clickable {
                                 onSettingsChanged(settings.copy(template = t))
                             }
@@ -141,7 +149,7 @@ fun SettingsView(
                         }
                         Text(
                             text = displayName,
-                            color = if (isSelected) Color.Black else Color.White,
+                            color = if (isSelected) selectedPillText else textPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -153,7 +161,7 @@ fun SettingsView(
 
         // SECTION 2: LOCATION TELEMETRY & MANUAL LOCATION
         item {
-            SettingsSectionHeader(title = "Location Telemetry")
+            SettingsSectionHeader(title = "Location Telemetry", color = headerColor)
             
             // Manual Location Switch Row
             SettingsSwitchRow(
@@ -163,7 +171,8 @@ fun SettingsView(
                 checked = settings.useManualLocation,
                 onCheckedChange = {
                     onSettingsChanged(settings.copy(useManualLocation = it))
-                }
+                },
+                isDarkTheme = isDarkTheme
             )
 
             AnimatedVisibility(visible = settings.useManualLocation) {
@@ -171,13 +180,13 @@ fun SettingsView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
-                        .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(16.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        .background(boxBgColor, RoundedCornerShape(16.dp))
+                        .border(1.dp, boxBorderColor, RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
                     Text(
                         text = "Search Address or Place",
-                        color = Color.White,
+                        color = textPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -190,15 +199,15 @@ fun SettingsView(
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("e.g. San Francisco, CA") },
+                            placeholder = { Text("e.g. San Francisco, CA", color = textSecondary) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFF00E676),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary,
+                                focusedBorderColor = headerColor,
+                                unfocusedBorderColor = boxBorderColor
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -244,14 +253,14 @@ fun SettingsView(
                                     }
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                            colors = ButtonDefaults.buttonColors(containerColor = headerColor),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.height(56.dp)
                         ) {
                             if (isSearching) {
-                                CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                                CircularProgressIndicator(color = selectedPillText, modifier = Modifier.size(24.dp))
                             } else {
-                                Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Black)
+                                Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = selectedPillText)
                             }
                         }
                     }
@@ -271,14 +280,14 @@ fun SettingsView(
                                 val value = it.toDoubleOrNull() ?: return@OutlinedTextField
                                 onSettingsChanged(settings.copy(manualLatitude = value))
                             },
-                            label = { Text("Latitude") },
+                            label = { Text("Latitude", color = textSecondary) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFF00E676),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary,
+                                focusedBorderColor = headerColor,
+                                unfocusedBorderColor = boxBorderColor
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -288,14 +297,14 @@ fun SettingsView(
                                 val value = it.toDoubleOrNull() ?: return@OutlinedTextField
                                 onSettingsChanged(settings.copy(manualLongitude = value))
                             },
-                            label = { Text("Longitude") },
+                            label = { Text("Longitude", color = textSecondary) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFF00E676),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary,
+                                focusedBorderColor = headerColor,
+                                unfocusedBorderColor = boxBorderColor
                             )
                         )
                     }
@@ -308,14 +317,14 @@ fun SettingsView(
                         onValueChange = {
                             onSettingsChanged(settings.copy(manualAddress = it))
                         },
-                        label = { Text("Custom Address Text") },
+                        label = { Text("Custom Address Text", color = textSecondary) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFF00E676),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                            focusedTextColor = textPrimary,
+                            unfocusedTextColor = textPrimary,
+                            focusedBorderColor = headerColor,
+                            unfocusedBorderColor = boxBorderColor
                         )
                     )
                 }
@@ -325,14 +334,15 @@ fun SettingsView(
 
         // SECTION 3: DATE & TIME FORMATS
         item {
-            SettingsSectionHeader(title = "Formats & Representation")
+            SettingsSectionHeader(title = "Formats & Representation", color = headerColor)
 
             // Date Format row
             SettingsSelectionRow(
                 title = "Date Format",
                 options = listOf("dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "EEEE, dd MMMM yyyy"),
                 selected = settings.dateFormat,
-                onSelected = { onSettingsChanged(settings.copy(dateFormat = it)) }
+                onSelected = { onSettingsChanged(settings.copy(dateFormat = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             // Time Format row
@@ -340,7 +350,8 @@ fun SettingsView(
                 title = "Time Format",
                 options = listOf("hh:mm a", "hh:mm:ss a", "HH:mm", "HH:mm:ss"),
                 selected = settings.timeFormat,
-                onSelected = { onSettingsChanged(settings.copy(timeFormat = it)) }
+                onSelected = { onSettingsChanged(settings.copy(timeFormat = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             // Coordinate Format row
@@ -348,7 +359,8 @@ fun SettingsView(
                 title = "Coordinate Format",
                 options = listOf("DD", "DMS"),
                 selected = settings.coordinateFormat,
-                onSelected = { onSettingsChanged(settings.copy(coordinateFormat = it)) }
+                onSelected = { onSettingsChanged(settings.copy(coordinateFormat = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -356,34 +368,38 @@ fun SettingsView(
 
         // SECTION 4: WATERMARK LAYOUT CONTROLS
         item {
-            SettingsSectionHeader(title = "Watermark Customization")
+            SettingsSectionHeader(title = "Watermark Customization", color = headerColor)
 
             SettingsSelectionRow(
                 title = "Position",
                 options = listOf("Bottom", "Top"),
                 selected = settings.watermarkPosition,
-                onSelected = { onSettingsChanged(settings.copy(watermarkPosition = it)) }
+                onSelected = { onSettingsChanged(settings.copy(watermarkPosition = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSelectionRow(
                 title = "Size",
                 options = listOf("Small", "Medium", "Large"),
                 selected = settings.watermarkSize,
-                onSelected = { onSettingsChanged(settings.copy(watermarkSize = it)) }
+                onSelected = { onSettingsChanged(settings.copy(watermarkSize = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSelectionRow(
                 title = "Map View Style",
                 options = listOf("Satellite", "Road", "Hybrid"),
                 selected = settings.mapViewType,
-                onSelected = { onSettingsChanged(settings.copy(mapViewType = it)) }
+                onSelected = { onSettingsChanged(settings.copy(mapViewType = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSelectionRow(
                 title = "Image Quality",
                 options = listOf("Low", "Medium", "High"),
                 selected = settings.imageQuality,
-                onSelected = { onSettingsChanged(settings.copy(imageQuality = it)) }
+                onSelected = { onSettingsChanged(settings.copy(imageQuality = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             // Card Opacity slider
@@ -392,16 +408,16 @@ fun SettingsView(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Card Opacity", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text("${(settings.opacity * 100).toInt()}%", color = Color(0xFF00E676), fontSize = 14.sp)
+                    Text("Card Opacity", color = textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("${(settings.opacity * 100).toInt()}%", color = headerColor, fontSize = 14.sp)
                 }
                 Slider(
                     value = settings.opacity,
                     onValueChange = { onSettingsChanged(settings.copy(opacity = it)) },
                     valueRange = 0.0f..1.0f,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFF00E676),
-                        activeTrackColor = Color(0xFF00E676)
+                        thumbColor = headerColor,
+                        activeTrackColor = headerColor
                     )
                 )
             }
@@ -412,7 +428,8 @@ fun SettingsView(
                 title = "Show Country Flag",
                 description = "Embed national emoji flag on watermark title line.",
                 checked = settings.showCountryFlag,
-                onCheckedChange = { onSettingsChanged(settings.copy(showCountryFlag = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(showCountryFlag = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSwitchRow(
@@ -420,7 +437,8 @@ fun SettingsView(
                 title = "Show Mini Map",
                 description = "Display rounded high resolution Google satellite thumbnail.",
                 checked = settings.showMiniMap,
-                onCheckedChange = { onSettingsChanged(settings.copy(showMiniMap = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(showMiniMap = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSwitchRow(
@@ -428,7 +446,8 @@ fun SettingsView(
                 title = "Show Compass",
                 description = "Embed dynamic rotating physical compass ring.",
                 checked = settings.showCompass,
-                onCheckedChange = { onSettingsChanged(settings.copy(showCompass = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(showCompass = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSwitchRow(
@@ -436,7 +455,8 @@ fun SettingsView(
                 title = "Rounded Corners",
                 description = "Apply Material 3 sleek curved container layout shape.",
                 checked = settings.roundedCorners,
-                onCheckedChange = { onSettingsChanged(settings.copy(roundedCorners = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(roundedCorners = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSwitchRow(
@@ -444,7 +464,8 @@ fun SettingsView(
                 title = "Glass Blur Effect",
                 description = "Add premium glassmorphism translucent background layer.",
                 checked = settings.glassBlur,
-                onCheckedChange = { onSettingsChanged(settings.copy(glassBlur = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(glassBlur = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSwitchRow(
@@ -452,7 +473,17 @@ fun SettingsView(
                 title = "Camera Shutter Sound",
                 description = "Play professional haptic feedback and shutter sound cues.",
                 checked = settings.shutterSound,
-                onCheckedChange = { onSettingsChanged(settings.copy(shutterSound = it)) }
+                onCheckedChange = { onSettingsChanged(settings.copy(shutterSound = it)) },
+                isDarkTheme = isDarkTheme
+            )
+
+            SettingsSwitchRow(
+                icon = Icons.Default.Image,
+                title = "Save Original Photo",
+                description = "Save both the original photo and the GPS watermarked photo.",
+                checked = settings.saveOriginalPhoto,
+                onCheckedChange = { onSettingsChanged(settings.copy(saveOriginalPhoto = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -460,20 +491,22 @@ fun SettingsView(
 
         // SECTION 5: GENERAL PREFERENCES
         item {
-            SettingsSectionHeader(title = "General Preferences")
+            SettingsSectionHeader(title = "General Preferences", color = headerColor)
 
             SettingsSelectionRow(
                 title = "App Theme",
                 options = listOf("Dark", "Light", "System"),
                 selected = settings.theme,
-                onSelected = { onSettingsChanged(settings.copy(theme = it)) }
+                onSelected = { onSettingsChanged(settings.copy(theme = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             SettingsSelectionRow(
                 title = "Language",
                 options = listOf("en", "es", "fr", "hi", "ja"),
                 selected = settings.language,
-                onSelected = { onSettingsChanged(settings.copy(language = it)) }
+                onSelected = { onSettingsChanged(settings.copy(language = it)) },
+                isDarkTheme = isDarkTheme
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -482,10 +515,10 @@ fun SettingsView(
 }
 
 @Composable
-fun SettingsSectionHeader(title: String) {
+fun SettingsSectionHeader(title: String, color: Color = Color(0xFF00E676)) {
     Text(
         text = title,
-        color = Color(0xFF00E676),
+        color = color,
         fontSize = 14.sp,
         fontWeight = FontWeight.Black,
         letterSpacing = 1.sp,
@@ -499,8 +532,14 @@ fun SettingsSwitchRow(
     title: String,
     description: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    isDarkTheme: Boolean = true
 ) {
+    val textPrimary = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+    val textSecondary = if (isDarkTheme) Color.Gray else Color(0xFF64748B)
+    val iconBgColor = if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF1F5F9)
+    val checkedTrackColor = if (isDarkTheme) Color(0xFF00E676) else Color(0xFF0F172A)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -510,22 +549,22 @@ fun SettingsSwitchRow(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp)),
+                .background(iconBgColor, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = textPrimary, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(text = description, color = Color.Gray, fontSize = 11.sp, lineHeight = 14.sp)
+            Text(text = title, color = textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(text = description, color = textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.Black,
-                checkedTrackColor = Color(0xFF00E676)
+                checkedThumbColor = if (isDarkTheme) Color.Black else Color.White,
+                checkedTrackColor = checkedTrackColor
             )
         )
     }
@@ -536,10 +575,16 @@ fun SettingsSelectionRow(
     title: String,
     options: List<String>,
     selected: String,
-    onSelected: (String) -> Unit
+    onSelected: (String) -> Unit,
+    isDarkTheme: Boolean = true
 ) {
+    val textPrimary = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+    val selectedPillBg = if (isDarkTheme) Color(0xFF00E676) else Color(0xFF0F172A)
+    val selectedPillText = if (isDarkTheme) Color.Black else Color.White
+    val unselectedPillBg = if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF1F5F9)
+
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
-        Text(text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = title, color = textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(options) { option ->
@@ -547,13 +592,13 @@ fun SettingsSelectionRow(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) Color(0xFF00E676) else Color.White.copy(alpha = 0.05f))
+                        .background(if (isSelected) selectedPillBg else unselectedPillBg)
                         .clickable { onSelected(option) }
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = option,
-                        color = if (isSelected) Color.Black else Color.White,
+                        color = if (isSelected) selectedPillText else textPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )

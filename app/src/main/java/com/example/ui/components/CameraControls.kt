@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -358,18 +359,54 @@ fun CameraControls(
                 }
             }
 
-            // Right Item: Switch Camera Selector
-            IconButton(
-                onClick = onSwitchCameraClicked,
+            // Right Item: Switch Camera Selector with tactile spring flip animation
+            var cameraSwitchRotation by remember { mutableFloatStateOf(0f) }
+            var cameraSwitchScale by remember { mutableFloatStateOf(1f) }
+
+            val animatedSwitchRotation by animateFloatAsState(
+                targetValue = cameraSwitchRotation,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "cameraSwitchRotation"
+            )
+
+            val animatedSwitchScale by animateFloatAsState(
+                targetValue = cameraSwitchScale,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                finishedListener = { cameraSwitchScale = 1f },
+                label = "cameraSwitchScale"
+            )
+
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(52.dp)
-                    .background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)
+                    .graphicsLayer {
+                        scaleX = animatedSwitchScale
+                        scaleY = animatedSwitchScale
+                    }
+                    .clip(CircleShape)
+                    .background(Color.DarkGray.copy(alpha = 0.5f))
+                    .clickable {
+                        cameraSwitchRotation += 180f
+                        cameraSwitchScale = 0.8f
+                        onSwitchCameraClicked()
+                    }
             ) {
                 Icon(
                     imageVector = Icons.Default.FlipCameraAndroid,
                     contentDescription = "Switch Camera Lens",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(26.dp)
+                        .graphicsLayer {
+                            rotationZ = animatedSwitchRotation
+                        }
                 )
             }
         }

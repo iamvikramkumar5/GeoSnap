@@ -41,7 +41,8 @@ data class SettingsData(
     val roundedCorners: Boolean = true,
     val glassBlur: Boolean = true,
     val shutterSound: Boolean = true,
-    val saveLocation: String = "GeoSnap",
+    val saveOriginalPhoto: Boolean = false,
+    val saveLocation: String = "GeoSnap Camera",
     val theme: String = "Dark", // "Light", "Dark", "System"
     val language: String = "en",
     val imageQuality: String = "High" // "Low", "Medium", "High"

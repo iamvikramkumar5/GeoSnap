@@ -32,18 +32,24 @@ import java.util.Locale
 
 object MediaSaver {
     private const val TAG = "MediaSaver"
-    private const val ALBUM_NAME = "GeoSnap" // Automatically save into Pictures/GeoSnap and Movies/GeoSnap!
+    private const val ALBUM_NAME = "GeoSnap Camera" // Save into Pictures/GeoSnap Camera and Movies/GeoSnap Camera
 
     fun savePhoto(
         context: Context,
         watermarkedBitmap: Bitmap,
         gpsData: GPSData,
-        settings: SettingsData
+        settings: SettingsData,
+        originalBitmap: Bitmap? = null
     ): Uri? {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val displayNameWatermarked = "GPS_IMG_${timestamp}.jpg"
 
-        val watermarkedUri = saveBitmapToMediaStore(context, watermarkedBitmap, displayNameWatermarked, settings)
+        if (settings.saveOriginalPhoto && originalBitmap != null) {
+            val displayNameOriginal = "IMG_${timestamp}.jpg"
+            saveBitmapToMediaStore(context, originalBitmap, displayNameOriginal, settings, isOriginal = true)
+        }
+
+        val displayNameWatermarked = "IMG_${timestamp}_GPS.jpg"
+        val watermarkedUri = saveBitmapToMediaStore(context, watermarkedBitmap, displayNameWatermarked, settings, isOriginal = false)
 
         // Save companion metadata json
         saveCompanionMetadata(context, displayNameWatermarked, gpsData)
@@ -231,7 +237,8 @@ object MediaSaver {
         context: Context,
         bitmap: Bitmap,
         displayName: String,
-        settings: SettingsData
+        settings: SettingsData,
+        isOriginal: Boolean = false
     ): Uri? {
         val resolver = context.contentResolver
         val contentValues = ContentValues().apply {
@@ -243,15 +250,16 @@ object MediaSaver {
             }
         }
 
-        // Quality compression percentage: Low = 55%, Medium = 75%, High = 95%
-        val compressQuality = when (settings.imageQuality) {
+        // Quality compression percentage:
+        // Original photo = 100% full quality, Watermarked photo = according to imageQuality settings
+        val compressQuality = if (isOriginal) 100 else when (settings.imageQuality) {
             "Low" -> 55
             "Medium" -> 75
             else -> 95
         }
 
-        // Downscale image dimensions dynamically to make photo saving blazingly fast and extremely light (small MBs)
-        val finalBitmap = if (settings.imageQuality == "Low") {
+        // Downscale image dimensions dynamically only for watermarked photo based on imageQuality setting
+        val finalBitmap = if (!isOriginal && settings.imageQuality == "Low") {
             val targetWidth = 1280
             if (bitmap.width > targetWidth) {
                 val factor = targetWidth.toFloat() / bitmap.width
@@ -260,7 +268,7 @@ object MediaSaver {
             } else {
                 bitmap
             }
-        } else if (settings.imageQuality == "Medium") {
+        } else if (!isOriginal && settings.imageQuality == "Medium") {
             val targetWidth = 1920
             if (bitmap.width > targetWidth) {
                 val factor = targetWidth.toFloat() / bitmap.width
