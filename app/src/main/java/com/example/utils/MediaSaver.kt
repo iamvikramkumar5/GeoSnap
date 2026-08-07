@@ -32,7 +32,7 @@ import java.util.Locale
 
 object MediaSaver {
     private const val TAG = "MediaSaver"
-    private const val ALBUM_NAME = "GeoSnap Camera" // Save into Pictures/GeoSnap Camera and Movies/GeoSnap Camera
+    private const val ALBUM_NAME = "GeoSnap" // Save into Pictures/GeoSnap and Movies/GeoSnap
 
     fun savePhoto(
         context: Context,
@@ -44,11 +44,11 @@ object MediaSaver {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
 
         if (settings.saveOriginalPhoto && originalBitmap != null) {
-            val displayNameOriginal = "IMG_${timestamp}.jpg"
+            val displayNameOriginal = "IMG_${timestamp}_ORIGINAL_GeoSnap.jpg"
             saveBitmapToMediaStore(context, originalBitmap, displayNameOriginal, settings, isOriginal = true)
         }
 
-        val displayNameWatermarked = "IMG_${timestamp}_GPS.jpg"
+        val displayNameWatermarked = "IMG_${timestamp}_GeoSnap.jpg"
         val watermarkedUri = saveBitmapToMediaStore(context, watermarkedBitmap, displayNameWatermarked, settings, isOriginal = false)
 
         // Save companion metadata json
@@ -69,7 +69,7 @@ object MediaSaver {
         onComplete: (Uri?) -> Unit
     ) {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val displayName = "GPS_VID_$timestamp.mp4"
+        val displayName = "VID_${timestamp}_GeoSnap.mp4"
         
         val outputTranscodedFile = File(context.cacheDir, "TRANSCODED_$displayName")
         

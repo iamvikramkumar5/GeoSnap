@@ -44,7 +44,7 @@ class SettingsManager(context: Context) {
             glassBlur = sharedPrefs.getBoolean("glass_blur", true),
             shutterSound = sharedPrefs.getBoolean("shutter_sound_enabled", true),
             saveOriginalPhoto = sharedPrefs.getBoolean("save_original_photo", false),
-            saveLocation = sharedPrefs.getString("save_location", "GeoSnap Camera") ?: "GeoSnap Camera",
+            saveLocation = sharedPrefs.getString("save_location", "GeoSnap") ?: "GeoSnap",
             theme = sharedPrefs.getString("theme", "Dark") ?: "Dark",
             language = sharedPrefs.getString("language", "en") ?: "en",
             imageQuality = sharedPrefs.getString("image_quality", "High") ?: "High",
