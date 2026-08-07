@@ -18,6 +18,9 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Camera
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ViewPort
+import android.util.Rational
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -45,6 +48,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.PathEffect
@@ -422,10 +426,28 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
     
-    val imageCapture = remember {
-        ImageCapture.Builder()
+    val gpsData by viewModel.gpsState.collectAsState()
+    val settings by viewModel.settingsState.collectAsState()
+    val mapBitmap by viewModel.mapBitmap.collectAsState()
+    val azimuth by viewModel.azimuth.collectAsState()
+    val deviceOrientation by viewModel.deviceOrientation.collectAsState()
+
+    val targetSurfaceRotation = when (deviceOrientation) {
+        90 -> android.view.Surface.ROTATION_90
+        180 -> android.view.Surface.ROTATION_180
+        270 -> android.view.Surface.ROTATION_270
+        else -> android.view.Surface.ROTATION_0
+    }
+
+    val imageCapture = remember(settings.aspectRatio) {
+        val builder = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .build()
+            .setTargetRotation(targetSurfaceRotation)
+        when (settings.aspectRatio) {
+            "9:16", "16:9", "Full", "Full Screen" -> builder.setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_16_9)
+            else -> builder.setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+        }
+        builder.build()
     }
     
     val videoCapture = remember {
@@ -438,12 +460,6 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
     val cameraSelector by viewModel.cameraSelector.collectAsState()
     val flashMode by viewModel.flashMode.collectAsState()
     val zoomRatio by viewModel.zoomRatio.collectAsState()
-    
-    val gpsData by viewModel.gpsState.collectAsState()
-    val settings by viewModel.settingsState.collectAsState()
-    val mapBitmap by viewModel.mapBitmap.collectAsState()
-    val azimuth by viewModel.azimuth.collectAsState()
-    val deviceOrientation by viewModel.deviceOrientation.collectAsState()
 
     val isCapturing by viewModel.isCapturing.collectAsState()
     val shutterFlashActive by viewModel.shutterFlashActive.collectAsState()
@@ -453,14 +469,7 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
     val recordingDuration by viewModel.recordingDurationSeconds.collectAsState()
     val savedMedia by viewModel.savedMedia.collectAsState()
 
-    val targetSurfaceRotation = when (deviceOrientation) {
-        90 -> android.view.Surface.ROTATION_90
-        180 -> android.view.Surface.ROTATION_180
-        270 -> android.view.Surface.ROTATION_270
-        else -> android.view.Surface.ROTATION_0
-    }
-
-    LaunchedEffect(targetSurfaceRotation) {
+    LaunchedEffect(imageCapture, targetSurfaceRotation) {
         try {
             imageCapture.targetRotation = targetSurfaceRotation
             videoCapture.targetRotation = targetSurfaceRotation
@@ -498,10 +507,10 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
         }
     }
 
-    LaunchedEffect(cameraSelector, activeCaptureMode, cameraProviderFuture, lifecycleState) {
+    LaunchedEffect(cameraSelector, activeCaptureMode, cameraProviderFuture, lifecycleState, settings.aspectRatio, imageCapture) {
         val cameraProvider = cameraProviderFuture.get()
         
-        if (lifecycleState != Lifecycle.State.RESUMED) {
+        if (!lifecycleState.isAtLeast(Lifecycle.State.STARTED)) {
             try {
                 cameraProvider.unbindAll()
             } catch (e: Exception) {
@@ -510,7 +519,13 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
             return@LaunchedEffect
         }
 
-        val preview = Preview.Builder().build().also {
+        val previewBuilder = Preview.Builder()
+            .setTargetRotation(targetSurfaceRotation)
+        when (settings.aspectRatio) {
+            "9:16", "16:9", "Full", "Full Screen" -> previewBuilder.setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_16_9)
+            else -> previewBuilder.setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+        }
+        val preview = previewBuilder.build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
 
@@ -542,16 +557,76 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // 1. Live Camera Preview (Tap-to-focus and Pinch-to-zoom integrated)
-        CameraPreviewView(
-            previewView = previewView,
-            cameraControl = activeCamera?.cameraControl,
-            currentZoom = zoomRatio,
-            onZoomChanged = { viewModel.setZoom(it) },
-            modifier = Modifier.fillMaxSize()
-        )
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            val containerWidth = constraints.maxWidth.toFloat()
+            val containerHeight = constraints.maxHeight.toFloat()
+            val isPortrait = containerHeight > containerWidth
 
-        // 2. Top Black Menu Bar (Flash, Sound Toggle, Settings)
+            val activeRatio = settings.aspectRatio
+            val (targetRatio, isTopAligned, topPaddingDp) = when (activeRatio) {
+                "3:4", "4:3" -> Triple(
+                    if (isPortrait) 3.0f / 4.0f else 4.0f / 3.0f,
+                    true,
+                    50.dp
+                )
+                "9:16", "16:9" -> Triple(
+                    if (isPortrait) 9.0f / 16.0f else 16.0f / 9.0f,
+                    true,
+                    48.dp
+                )
+                "1:1" -> Triple(
+                    1.0f,
+                    true,
+                    44.dp
+                )
+                else -> Triple(null, false, 0.dp) // "Full"
+            }
+
+            val previewModifier = if (targetRatio != null) {
+                val containerRatio = containerWidth / containerHeight
+                val alignmentModifier = if (isTopAligned) {
+                    Modifier
+                        .statusBarsPadding()
+                        .padding(top = topPaddingDp)
+                        .align(Alignment.TopCenter)
+                } else {
+                    Modifier.align(Alignment.Center)
+                }
+
+                if (containerRatio > targetRatio) {
+                    alignmentModifier
+                        .aspectRatio(targetRatio, matchHeightConstraintsFirst = true)
+                        .clipToBounds()
+                } else {
+                    alignmentModifier
+                        .aspectRatio(targetRatio, matchHeightConstraintsFirst = false)
+                        .clipToBounds()
+                }
+            } else {
+                Modifier.fillMaxSize()
+            }
+
+            CameraPreviewView(
+                previewView = previewView,
+                cameraControl = activeCamera?.cameraControl,
+                currentZoom = zoomRatio,
+                onZoomChanged = { viewModel.setZoom(it) },
+                modifier = previewModifier
+            )
+        }
+
+        // 2. Top Black Menu Bar (Aspect Ratio, Flash, Sound Toggle, Settings)
         CameraTopBar(
+            aspectRatio = if (settings.aspectRatio in listOf("3:4", "9:16", "Full")) settings.aspectRatio else "3:4",
+            onAspectRatioCycled = {
+                val ratios = listOf("3:4", "9:16", "Full")
+                val currentIndex = ratios.indexOf(settings.aspectRatio).let { if (it == -1) 0 else it }
+                val nextRatio = ratios[(currentIndex + 1) % ratios.size]
+                viewModel.updateSettings { copy(aspectRatio = nextRatio) }
+            },
             flashMode = flashMode,
             onFlashCycled = { viewModel.cycleFlash() },
             isShutterSoundEnabled = settings.shutterSound,
@@ -587,7 +662,7 @@ fun CameraWorkspace(viewModel: CameraViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Black)
+                    .background(Color.Transparent)
             ) {
                 CameraControls(
                     captureMode = activeCaptureMode,

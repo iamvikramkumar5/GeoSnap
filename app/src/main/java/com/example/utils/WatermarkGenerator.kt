@@ -148,7 +148,7 @@ object WatermarkGenerator {
     ) {
         // 1. Detect if it is the preview canvas or final saved photo
         val isPreview = (width / height) > 2.0f
-        val isLandscape = !isPreview && (width > height)
+        val isLandscape = !isPreview && (width >= height)
         val referenceDimension = if (isPreview) width else Math.min(width, height)
         
         // 2. Base dynamic scale referenced to standard dimension to keep sizes consistent

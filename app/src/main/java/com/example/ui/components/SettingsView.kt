@@ -489,7 +489,22 @@ fun SettingsView(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // SECTION 5: GENERAL PREFERENCES
+        // SECTION 5: CAMERA SETTINGS
+        item {
+            SettingsSectionHeader(title = "Camera Settings", color = headerColor)
+
+            SettingsSelectionRow(
+                title = "Aspect Ratio",
+                options = listOf("3:4", "9:16", "Full"),
+                selected = if (settings.aspectRatio in listOf("3:4", "9:16", "Full")) settings.aspectRatio else "3:4",
+                onSelected = { onSettingsChanged(settings.copy(aspectRatio = it)) },
+                isDarkTheme = isDarkTheme
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // SECTION 6: GENERAL PREFERENCES
         item {
             SettingsSectionHeader(title = "General Preferences", color = headerColor)
 

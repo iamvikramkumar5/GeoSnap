@@ -43,7 +43,7 @@ fun CameraPreviewView(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier) {
         AndroidView(
             factory = { ctx ->
                 previewView.apply {

@@ -45,5 +45,6 @@ data class SettingsData(
     val saveLocation: String = "GeoSnap Camera",
     val theme: String = "Dark", // "Light", "Dark", "System"
     val language: String = "en",
-    val imageQuality: String = "High" // "Low", "Medium", "High"
+    val imageQuality: String = "High", // "Low", "Medium", "High"
+    val aspectRatio: String = "3:4" // "3:4", "9:16", "Full"
 ) : Serializable

@@ -47,7 +47,8 @@ class SettingsManager(context: Context) {
             saveLocation = sharedPrefs.getString("save_location", "GeoSnap Camera") ?: "GeoSnap Camera",
             theme = sharedPrefs.getString("theme", "Dark") ?: "Dark",
             language = sharedPrefs.getString("language", "en") ?: "en",
-            imageQuality = sharedPrefs.getString("image_quality", "High") ?: "High"
+            imageQuality = sharedPrefs.getString("image_quality", "High") ?: "High",
+            aspectRatio = sharedPrefs.getString("aspect_ratio", "3:4") ?: "3:4"
         )
     }
 
@@ -84,6 +85,7 @@ class SettingsManager(context: Context) {
             putString("theme", data.theme)
             putString("language", data.language)
             putString("image_quality", data.imageQuality)
+            putString("aspect_ratio", data.aspectRatio)
             apply()
         }
     }

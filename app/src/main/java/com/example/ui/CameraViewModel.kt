@@ -321,48 +321,44 @@ class CameraViewModel(private val context: Context) : ViewModel(), SensorEventLi
             Log.e(TAG, "Error triggering vibration", e)
         }
 
-        val cameraExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
-
         imageCapture.takePicture(
-            cameraExecutor,
+            ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(imageProxy: ImageProxy) {
-                    val rotation = imageProxy.imageInfo.rotationDegrees
-                    val bitmap = imageProxyToBitmap(imageProxy)
-                    imageProxy.close()
-
-                    // Free up capture state instantly so user can snap subsequent photos with zero block!
+                    // Free up capture state and trigger success callback instantly so UI feedback is immediate
                     _isCapturing.value = false
+                    onSuccess()
 
-                    // Process and watermark in background thread
-                    viewModelScope.launch(Dispatchers.Default) {
+                    // Process decoding, rotation, watermarking, and disk IO in background
+                    viewModelScope.launch(Dispatchers.IO) {
                         try {
+                            val rotation = imageProxy.imageInfo.rotationDegrees
+                            val bitmap = imageProxyToBitmap(imageProxy)
+                            imageProxy.close()
+
                             val orientedBitmap = if (rotation != 0) {
                                 rotateBitmap(bitmap, rotation)
                             } else {
                                 bitmap
                             }
 
+                            // Crop bitmap to selected aspect ratio (WYSIWYG)
+                            val finalBitmap = cropBitmapToAspectRatio(orientedBitmap, settings.aspectRatio)
+
                             val gps = gpsState.value
-                            val cachedMap = _mapBitmap.value // read pre-fetched map tile instantly (no blocking network calls!)
+                            val cachedMap = _mapBitmap.value // read pre-fetched map tile instantly!
                             val activeAzi = _azimuth.value
 
                             // Draw watermark using standard rendering engine
-                            val watermarked = WatermarkGenerator.drawWatermark(orientedBitmap, gps, settings, cachedMap, activeAzi)
+                            val watermarked = WatermarkGenerator.drawWatermark(finalBitmap, gps, settings, cachedMap, activeAzi)
 
                             // Save photo(s)
-                            MediaSaver.savePhoto(context, watermarked, gps, settings, orientedBitmap)
+                            MediaSaver.savePhoto(context, watermarked, gps, settings, finalBitmap)
 
                             // Reload Gallery
                             loadSavedMedia()
-
-                            withContext(Dispatchers.Main) {
-                                onSuccess()
-                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to process photo capture", e)
-                        } finally {
-                            cameraExecutor.shutdown()
                         }
                     }
                 }
@@ -370,7 +366,6 @@ class CameraViewModel(private val context: Context) : ViewModel(), SensorEventLi
                 override fun onError(exception: ImageCaptureException) {
                     Log.e(TAG, "CameraX takePicture failed", exception)
                     _isCapturing.value = false
-                    cameraExecutor.shutdown()
                 }
             }
         )
@@ -498,6 +493,51 @@ class CameraViewModel(private val context: Context) : ViewModel(), SensorEventLi
         val matrix = Matrix()
         matrix.postRotate(angle.toFloat())
         return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
+    fun getTargetAspectRatioFloat(aspectRatioSetting: String, width: Float, height: Float): Float? {
+        if (width <= 0f || height <= 0f) return null
+        val isPortrait = height > width
+        return when (aspectRatioSetting) {
+            "1:1" -> 1.0f
+            "3:4", "4:3" -> if (isPortrait) 3.0f / 4.0f else 4.0f / 3.0f
+            "9:16", "16:9" -> if (isPortrait) 9.0f / 16.0f else 16.0f / 9.0f
+            "Full", "Full Screen" -> null // Full uses full sensor resolution without cropping
+            else -> if (isPortrait) 3.0f / 4.0f else 4.0f / 3.0f // Default is 3:4
+        }
+    }
+
+    private fun cropBitmapToAspectRatio(bitmap: Bitmap, aspectRatioSetting: String): Bitmap {
+        val targetRatio = getTargetAspectRatioFloat(aspectRatioSetting, bitmap.width.toFloat(), bitmap.height.toFloat())
+            ?: return bitmap
+
+        val w = bitmap.width
+        val h = bitmap.height
+        val currentRatio = w.toFloat() / h.toFloat()
+
+        if (kotlin.math.abs(currentRatio - targetRatio) < 0.01f) {
+            return bitmap
+        }
+
+        val newWidth: Int
+        val newHeight: Int
+        if (currentRatio > targetRatio) {
+            newHeight = h
+            newWidth = (h * targetRatio).toInt().coerceAtMost(w)
+        } else {
+            newWidth = w
+            newHeight = (w / targetRatio).toInt().coerceAtMost(h)
+        }
+
+        val xOffset = ((w - newWidth) / 2).coerceAtLeast(0)
+        val yOffset = ((h - newHeight) / 2).coerceAtLeast(0)
+
+        return try {
+            Bitmap.createBitmap(bitmap, xOffset, yOffset, newWidth, newHeight)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to crop bitmap to aspect ratio $aspectRatioSetting", e)
+            bitmap
+        }
     }
 
     override fun onCleared() {

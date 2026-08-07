@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.camera.core.ImageCapture
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -34,6 +36,8 @@ enum class CaptureMode {
 
 @Composable
 fun CameraTopBar(
+    aspectRatio: String = "3:4",
+    onAspectRatioCycled: () -> Unit = {},
     flashMode: Int,
     onFlashCycled: () -> Unit,
     isShutterSoundEnabled: Boolean,
@@ -44,7 +48,7 @@ fun CameraTopBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black)
+            .background(Color.Transparent)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
@@ -53,6 +57,23 @@ fun CameraTopBar(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Aspect Ratio Selector Button
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .clickable { onAspectRatioCycled() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = aspectRatio,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             // Flash Mode Icon
             IconButton(
                 onClick = onFlashCycled,
@@ -134,17 +155,18 @@ fun CameraControls(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(Color.Transparent)
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         
-        // 1. Zoom Selector Bar & Grid Icon (Pill capsule + grid button as seen in reference image)
+        // 1. Zoom Selector Bar & Grid Icon (Pill capsule + grid button)
         if (!isRecording) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -246,11 +268,11 @@ fun CameraControls(
             }
         }
 
-        // 3. Primary Capture Controls Row
+        // 4. Primary Capture Controls Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -302,7 +324,7 @@ fun CameraControls(
                 contentAlignment = Alignment.Center
             ) {
                 if (captureMode == CaptureMode.PHOTO) {
-                    // Photo Shutter: No progress indicator inside (instant shutter experience!)
+                    // Photo Shutter
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -411,43 +433,46 @@ fun CameraControls(
             }
         }
 
-        // 4. Camera Mode Row (PHOTO, VIDEO, MORE)
+        // 4. Apple Camera Style Floating Segmented Pill (PHOTO | VIDEO) - Below shutter button
         if (!isRecording) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                    .background(Color(0xFF1A1A1A).copy(alpha = 0.85f), RoundedCornerShape(24.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val modeList = listOf("PHOTO", "VIDEO", "MORE")
-                modeList.forEach { modeName ->
-                    val isSelected = when (modeName) {
-                        "PHOTO" -> captureMode == CaptureMode.PHOTO
-                        "VIDEO" -> captureMode == CaptureMode.VIDEO
-                        else -> false
-                    }
-                    val textColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.55f)
-                    
+                val modeList = listOf(CaptureMode.PHOTO to "PHOTO", CaptureMode.VIDEO to "VIDEO")
+                modeList.forEach { (mode, modeName) ->
+                    val isSelected = captureMode == mode
+
+                    val animatedBgColor by animateColorAsState(
+                        targetValue = if (isSelected) Color.White else Color.Transparent,
+                        animationSpec = tween(durationMillis = 200),
+                        label = "modeBgColor"
+                    )
+                    val animatedTextColor by animateColorAsState(
+                        targetValue = if (isSelected) Color.Black else Color.White,
+                        animationSpec = tween(durationMillis = 200),
+                        label = "modeTextColor"
+                    )
+
                     Box(
                         modifier = Modifier
-                            .clickable {
-                                when (modeName) {
-                                    "PHOTO" -> onCaptureModeChanged(CaptureMode.PHOTO)
-                                    "VIDEO" -> onCaptureModeChanged(CaptureMode.VIDEO)
-                                    "MORE" -> onSettingsClicked()
-                                }
-                            }
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(animatedBgColor)
+                            .clickable { onCaptureModeChanged(mode) }
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = modeName,
-                            color = textColor,
-                            fontSize = 12.5.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                            letterSpacing = 1.sp
+                            color = animatedTextColor,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            letterSpacing = 0.8.sp
                         )
                     }
                 }

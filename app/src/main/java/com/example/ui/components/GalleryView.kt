@@ -38,7 +38,7 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun GalleryView(
     mediaFiles: List<File>,
@@ -48,6 +48,9 @@ fun GalleryView(
 ) {
     val context = LocalContext.current
     var selectedFile by remember { mutableStateOf<File?>(null) }
+
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedFiles by remember { mutableStateOf<Set<File>>(emptySet()) }
 
     val isDarkTheme = MaterialTheme.colorScheme.background.red < 0.5f
     val bgColor = if (isDarkTheme) Color(0xFF0C0E12) else Color(0xFFFAFAFA)
@@ -74,31 +77,117 @@ fun GalleryView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "GEOSNAP VAULT",
-                        color = textPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.5.sp
-                    )
-                    Text(
-                        text = "${mediaFiles.size} Items Available",
-                        color = accentColor,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                if (isSelectionMode) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = {
+                                if (selectedFiles.size == mediaFiles.size) {
+                                    selectedFiles = emptySet()
+                                } else {
+                                    selectedFiles = mediaFiles.toSet()
+                                }
+                            }
+                        ) {
+                            Text(
+                                text = if (selectedFiles.size == mediaFiles.size) "Deselect All" else "Select All",
+                                color = accentColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
 
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.background(iconBg, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close Vault",
-                        tint = textPrimary
-                    )
+                        Text(
+                            text = "${selectedFiles.size} Selected",
+                            color = textPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (selectedFiles.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    val filesToDelete = selectedFiles.toList()
+                                    filesToDelete.forEach { onDeleteFile(it) }
+                                    selectedFiles = emptySet()
+                                    isSelectionMode = false
+                                },
+                                modifier = Modifier.background(Color(0xFFFF5252).copy(alpha = 0.2f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete Selected",
+                                    tint = Color(0xFFFF5252)
+                                )
+                            }
+                        }
+
+                        TextButton(
+                            onClick = {
+                                isSelectionMode = false
+                                selectedFiles = emptySet()
+                            }
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = textPrimary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                } else {
+                    Column {
+                        Text(
+                            text = "GEOSNAP VAULT",
+                            color = textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp
+                        )
+                        Text(
+                            text = "${mediaFiles.size} Items Available",
+                            color = accentColor,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (mediaFiles.isNotEmpty()) {
+                            TextButton(
+                                onClick = { isSelectionMode = true }
+                            ) {
+                                Text(
+                                    text = "Select",
+                                    color = accentColor,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = onClose,
+                            modifier = Modifier.background(iconBg, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close Vault",
+                                tint = textPrimary
+                            )
+                        }
+                    }
                 }
             }
 
@@ -153,6 +242,7 @@ fun GalleryView(
                     items(mediaFiles) { file ->
                         val isVideo = file.extension.equals("mp4", true)
                         val isOriginal = file.name.contains("_original")
+                        val isSelected = selectedFiles.contains(file)
 
                         Box(
                             modifier = Modifier
@@ -160,11 +250,29 @@ fun GalleryView(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF1E232B))
                                 .border(
-                                    1.dp,
-                                    if (isOriginal) Color.White.copy(alpha = 0.1f) else Color(0xFF00E676).copy(alpha = 0.3f),
-                                    RoundedCornerShape(8.dp)
+                                    width = if (isSelected) 2.5.dp else 1.dp,
+                                    color = if (isSelected) accentColor else if (isOriginal) Color.White.copy(alpha = 0.1f) else Color(0xFF00E676).copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(8.dp)
                                 )
-                                .clickable { selectedFile = file },
+                                .combinedClickable(
+                                    onClick = {
+                                        if (isSelectionMode) {
+                                            selectedFiles = if (isSelected) {
+                                                selectedFiles - file
+                                            } else {
+                                                selectedFiles + file
+                                            }
+                                        } else {
+                                            selectedFile = file
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!isSelectionMode) {
+                                            isSelectionMode = true
+                                            selectedFiles = setOf(file)
+                                        }
+                                    }
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
@@ -173,6 +281,31 @@ fun GalleryView(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
+
+                            // Checkbox badge in selection mode
+                            if (isSelectionMode) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(6.dp)
+                                        .size(22.dp)
+                                        .background(
+                                            if (isSelected) accentColor else Color.Black.copy(alpha = 0.6f),
+                                            CircleShape
+                                        )
+                                        .border(1.5.dp, if (isSelected) Color.White else Color.White.copy(alpha = 0.7f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = Color.Black,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
 
                             // Video overlay badge
                             if (isVideo) {
